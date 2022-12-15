@@ -1172,3 +1172,115 @@ which yields:
 ```
 
 which is exactly the number we see in the interaction model. So, the simpler model slightly (but not significantly) distorts the joint distribution of these three variables.
+
+* Next, we use a canned procedure in R to verify that we can get the same results:
+
+```r
+library(nnet)
+mlogit <- multinom(y~1+sbn,data=df)
+summary(mlogit)
+logLik(mlogit)
+```
+
+which gives us the following output (please compare to output above):
+
+```rout
+> library(nnet)
+> 
+> mlogit <- multinom(y~1+sbn,data=df)
+# weights:  15 (8 variable)
+initial  value 110558.727957 
+iter  10 value 26273.408126
+iter  20 value 26016.606470
+final  value 26013.686582 
+converged
+> summary(mlogit)
+Call:
+multinom(formula = y ~ 1 + sbn, data = df)
+
+Coefficients:
+  (Intercept)        sbn
+2   -3.941561 -0.6001812
+3   -2.301734 -0.7031680
+4   -3.924569 -1.0646196
+5   -5.599792 -1.2366376
+
+Std. Errors:
+  (Intercept)        sbn
+2  0.04406523 0.06798918
+3  0.02016272 0.03170564
+4  0.04369955 0.07802104
+5  0.10018477 0.19074012
+
+Residual Deviance: 52027.37 
+AIC: 52043.37 
+> logLik(mlogit)
+'log Lik.' -26013.69 (df=8)
+> 
+```
+
+* Now, let's post-process the results of this analysis and verify that we get the same predicted distribution of *y* that we obtained last week:
+
+```r
+a2 <- coef(mlogit)[1,1]
+b2 <- coef(mlogit)[1,2]
+a3 <- coef(mlogit)[2,1]
+b3 <- coef(mlogit)[2,2]
+a4 <- coef(mlogit)[3,1]
+b4 <- coef(mlogit)[3,2]
+a5 <- coef(mlogit)[4,1]
+b5 <- coef(mlogit)[4,2]
+
+l2n <- a2+b2*0
+l2y <- a2+b2*1
+
+l3n <- a3+b3*0
+l3y <- a3+b3*1
+
+l4n <- a4+b4*0
+l4y <- a4+b4*1
+
+l5n <- a5+b5*0
+l5y <- a5+b5*1
+
+py1n <- 1/(1+exp(l2n)+exp(l3n)+exp(l4n)+exp(l5n))
+py1y <- 1/(1+exp(l2y)+exp(l3y)+exp(l4y)+exp(l5y))
+
+py2n <- exp(l2n)/(1+exp(l2n)+exp(l3n)+exp(l4n)+exp(l5n))
+py2y <- exp(l2y)/(1+exp(l2y)+exp(l3y)+exp(l4y)+exp(l5y))
+
+py3n <- exp(l3n)/(1+exp(l2n)+exp(l3n)+exp(l4n)+exp(l5n))
+py3y <- exp(l3y)/(1+exp(l2y)+exp(l3y)+exp(l4y)+exp(l5y))
+
+py4n <- exp(l4n)/(1+exp(l2n)+exp(l3n)+exp(l4n)+exp(l5n))
+py4y <- exp(l4y)/(1+exp(l2y)+exp(l3y)+exp(l4y)+exp(l5y))
+
+py5n <- exp(l5n)/(1+exp(l2n)+exp(l3n)+exp(l4n)+exp(l5n))
+py5y <- exp(l5y)/(1+exp(l2y)+exp(l3y)+exp(l4y)+exp(l5y))
+
+# display the results
+
+no.vector <- c(py1n,py2n,py3n,py4n,py5n)
+no.vector
+yes.vector <- c(py1y,py2y,py3y,py4y,py5y)
+yes.vector
+yes.vector-no.vector
+```
+
+* Here are the results:
+
+```rout
+> # display the results
+> 
+> no.vector <- c(py1n,py2n,py3n,py4n,py5n)
+> no.vector
+[1] 0.874927140 0.016989227 0.087567212 0.017280386 0.003236036
+> yes.vector <- c(py1y,py2y,py3y,py4y,py5y)
+> yes.vector
+[1] 0.936256334 0.009975648 0.046385520 0.006377022 0.001005475
+> yes.vector-no.vector
+[1]  0.061329195 -0.007013578 -0.041181692 -0.010903364 -0.002230561
+> 
+```
+
+which tell us that wearing a seat belt is indeed associated with better outcomes throughout the range of the distribution of *y*.
